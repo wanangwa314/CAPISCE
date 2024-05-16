@@ -1,0 +1,52 @@
+<.flash_group flash={@flash} />
+<!--
+// v0 by Vercel.
+// https://v0.dev/t/kOl2Qo8MyFh
+-->
+<div class="px-60 bg-gray-200 dark:bg-gray-700">
+    <main class="flex flex-col h-screen w-full bg-gray-100 dark:bg-gray-900 p-4 md:p-8">
+        <div class="flex-1 overflow-y-auto space-y-4">
+            <div class="flex flex-col items-start space-y-2">
+                <div class="bg-white dark:bg-gray-800 rounded-lg p-4 max-w-full">
+                    <p class="text-gray-900 dark:text-gray-50 whitespace-pre-wrap">
+                        Hello! I'm an AI assistant created by Vercel. I'm here to help you with any
+                        questions or
+                        tasks
+                        you may
+                        have. How can I assist you today?
+                    </p>
+                </div>
+            </div>
+            <%= for message <- @chat_data do %>
+                <%= if message.type=="AI" do %>
+                    <div class="flex flex-col items-start space-y-2">
+                        <div class="bg-white dark:bg-gray-800 rounded-lg p-4 max-w-full">
+                            <p class="text-gray-900 dark:text-gray-50 whitespace-pre-wrap">
+                                <%= message.msg %>
+                            </p>
+                        </div>
+                    </div>
+                    <% end %>
+                        <%= if message.type=="USER" do %>
+                            <div class="flex flex-col items-end space-y-2">
+                                <div class="bg-white dark:bg-gray-800 rounded-lg p-4 max-w-full">
+                                    <p class="text-gray-900 dark:text-gray-50 whitespace-pre-wrap">
+                                        <%= message.msg %>
+                                    </p>
+                                </div>
+                            </div>
+                            <% end %>
+                                <% end %>
+        </div>
+        <form class="bg-white dark:bg-gray-800 rounded-lg p-4 mt-4 flex items-center" phx-change="change">
+            <textarea
+                class="flex min-h-[80px] w-full rounded-md border border-input px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 flex-1 bg-transparent border-none focus:ring-0 focus:outline-none text-gray-900 dark:text-gray-50 placeholder-gray-500 dark:placeholder-gray-400 "
+                placeholder="Type your message..." rows="2" name="message"></textarea>
+            <button
+                class="bg-blue-500 dark:text-white inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2 ml-4"
+                type="button" phx-click="send">
+                Send
+            </button>
+        </form>
+    </main>
+</div>

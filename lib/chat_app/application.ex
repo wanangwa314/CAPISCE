@@ -11,8 +11,7 @@ defmodule ChatApp.Application do
       ChatAppWeb.Telemetry,
       ChatApp.Repo,
       {Ecto.Migrator,
-        repos: Application.fetch_env!(:chat_app, :ecto_repos),
-        skip: skip_migrations?()},
+       repos: Application.fetch_env!(:chat_app, :ecto_repos), skip: skip_migrations?()},
       {DNSCluster, query: Application.get_env(:chat_app, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: ChatApp.PubSub},
       # Start the Finch HTTP client for sending emails
