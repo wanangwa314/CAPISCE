@@ -1,5 +1,6 @@
 defmodule ChatAppWeb.ChatLive do
   use ChatAppWeb, :live_view
+  require Logger
 
   def mount(_params, _session, socket) do
     data = [%{type: "NONE", msg: "NONE"}]
@@ -49,7 +50,6 @@ defmodule ChatAppWeb.ChatLive do
 
   defp prompt_llm(message) do
     # :timer.sleep(2000)
-    # "Sure, go ahead"
     body = %{
       "contents" => [
         %{
@@ -64,17 +64,23 @@ defmodule ChatAppWeb.ChatLive do
 
     res =
       HTTPoison.post(
-  "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=AIzaSyBO1d2-CxTJeWEAlqzSV6Yat26Wym0flno",
-  Jason.encode!(body),
-  [{"Content-Type", "application/json"}],
-  recv_timeout: 300_000 # 60 seconds (1 minute)
-)
+        "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=AIzaSyBO1d2-CxTJeWEAlqzSV6Yat26Wym0flno",
+        Jason.encode!(body),
+        [{"Content-Type", "application/json"}],
+        recv_timeout: 300_000
+      )
 
     case res do
       {:ok, data} ->
         Jason.decode!(data.body)
         |> get_in(["candidates", Access.all(), "content", "parts", Access.at(0), "text"])
         |> List.first()
+        |> Earmark.as_html()
+        |> case do
+          {:ok, md, _list} -> md
+          {:error, error} -> Logger.error(error)
+        end
+
       {:error, error} ->
         Phoenix.Naming.humanize(error.reason)
     end
