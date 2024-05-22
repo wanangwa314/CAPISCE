@@ -6,7 +6,7 @@
 <div class="px-60 bg-gray-200 dark:bg-gray-700">
   <main class="flex flex-col h-screen w-full bg-gray-100 dark:bg-gray-900 p-4 md:p-8">
     <div class="flex-1 overflow-y-auto space-y-4">
-      <div class="flex flex-col items-start space-y-2">
+      <!--<div class="flex flex-col items-start space-y-2">
         <div class="bg-white dark:bg-gray-800 rounded-lg p-4 max-w-full">
           <p class="text-gray-900 dark:text-gray-50 whitespace-pre-wrap">
             Hello! I'm an AI assistant created by Vercel. I'm here to help you with any
@@ -16,21 +16,21 @@
             have. How can I assist you today?
           </p>
         </div>
-      </div>
+      </div>-->
       <%= for message <- @chat_data do %>
         <%= if message.type=="AI" do %>
           <div class="flex flex-col items-start space-y-2">
-            <div class="bg-white text-white dark:bg-gray-800 rounded-lg p-4 max-w-full whitespace-pre-wrap">
-              <p class="text-gray-900 dark:text-gray-50 whitespace-pre-wrap">
+            <div class="bg-white text-white dark:bg-gray-800 p-2 rounded-lg max-w-full">
+              <p class="text-gray-900 dark:text-gray-50">
                 <%= Phoenix.HTML.raw(message.msg) %>
               </p>
             </div>
           </div>
           <% end %>
             <%= if message.type=="USER" do %>
-              <div class="flex flex-col items-end space-y-2">
-                <div class="bg-white dark:bg-gray-800 rounded-lg p-4 max-w-full">
-                  <p class="text-gray-900 dark:text-gray-50 whitespace-pre-wrap">
+              <div class="flex flex-col items-end">
+                <div class="bg-white dark:bg-gray-800 rounded-lg p-2 max-w-full">
+                  <p class="text-gray-900 dark:text-gray-50">
                     <%= Phoenix.HTML.raw(message.msg) %>
                   </p>
                 </div>

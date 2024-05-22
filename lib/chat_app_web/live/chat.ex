@@ -39,7 +39,7 @@ defmodule ChatAppWeb.ChatLive do
 
   def handle_info(:prompt, socket) do
     user_message = socket.assigns.user_message
-    llm_response = prompt_llm(user_message)
+    llm_response = prompt_llm(user_message, socket)
 
     {:noreply,
      socket
@@ -48,14 +48,21 @@ defmodule ChatAppWeb.ChatLive do
      end)}
   end
 
-  defp prompt_llm(message) do
+  defp prompt_llm(message, socket) do
     # :timer.sleep(2000)
+    system_prompt = system_prompt()
+    context = prompt_context(socket)
+    message = """
+                  ===================== USER PROMPT ========================\n
+                  #{message}
+              """
+
     body = %{
       "contents" => [
         %{
           "parts" => [
             %{
-              "text" => message
+              "text" => "#{system_prompt} \n #{context} \n #{message}"
             }
           ]
         }
@@ -75,14 +82,54 @@ defmodule ChatAppWeb.ChatLive do
         Jason.decode!(data.body)
         |> get_in(["candidates", Access.all(), "content", "parts", Access.at(0), "text"])
         |> List.first()
+        |> case do
+          nil -> "I have no more responses sorry."
+          text -> text
+        end
+        |> String.replace("<p>", "")
+        |> String.replace("</p>", "")
         |> Earmark.as_html()
         |> case do
           {:ok, md, _list} -> md
-          {:error, error} -> Logger.error(error)
+          {:error, error, _list} -> Logger.error(error)
         end
 
       {:error, error} ->
         Phoenix.Naming.humanize(error.reason)
     end
+  end
+
+  defp system_prompt() do
+    """
+      ===============  SYSTEM INSTRUCTIONS ======================
+      Firstly, do not include the conversation history in your reponses, unless you have been asked to.
+
+      Your responses should be fun, you should always try to make responses to questions you are asked very fun, sarcastic etc.
+      You should include emojis aswell if you need to
+
+      Your name is AI
+
+      The user question or message will come after the text ===================== USER PROMPT ========================
+
+      Some useful context about the conversation will come after ======================== CONTEXT =======================
+
+      Keep your response clean like not including this system prompt, do add irrelevant text. such the text in this
+      use markdown to format your responses.
+    """
+  end
+
+  defp prompt_context(socket) do
+    data = socket.assigns.chat_data
+
+    context = """
+                ======================== CONTEXT =======================
+
+              """
+
+    context2 = Enum.map(data, fn msg ->
+      "#{msg.type}: #{msg.msg}"
+    end)
+
+    context <> Enum.join(context2, "\n")
   end
 end
