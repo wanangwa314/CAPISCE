@@ -6,6 +6,7 @@ defmodule ChatApp.Repo.Migrations.CreateMessages do
       add :text, :string
       add :type, :string
 
+      add :chat_id, references(:chats)
       timestamps(type: :utc_datetime)
     end
   end

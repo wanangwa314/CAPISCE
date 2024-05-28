@@ -4,9 +4,11 @@ defmodule ChatApp.Chats do
   """
 
   import Ecto.Query, warn: false
+  require IEx
   alias ChatApp.Repo
 
   alias ChatApp.Chats.Chat
+  alias ChatApp.Chats.Message
 
   @doc """
   Returns the list of chats.
@@ -36,6 +38,10 @@ defmodule ChatApp.Chats do
 
   """
   def get_chat!(id), do: Repo.get!(Chat, id)
+
+  def get_chat_by_ref_id(ref_id) do
+    Repo.get_by(Chat, ref_id: ref_id)
+  end
 
   @doc """
   Creates a chat.
@@ -102,8 +108,6 @@ defmodule ChatApp.Chats do
     Chat.changeset(chat, attrs)
   end
 
-  alias ChatApp.Chats.Message
-
   @doc """
   Returns the list of messages.
 
@@ -149,6 +153,15 @@ defmodule ChatApp.Chats do
     %Message{}
     |> Message.changeset(attrs)
     |> Repo.insert()
+  end
+
+  def log_message_transaction(prompt_res, prompt_msg, chat_id) do
+    user = %{text: prompt_msg, type: "USER", chat_id: chat_id}
+    llm = %{text: prompt_res, type: "AI", chat_id: chat_id}
+    Ecto.Multi.new()
+    |> Ecto.Multi.insert(:prompt_msg, Message.changeset(%Message{}, user))
+    |> Ecto.Multi.insert(:prompt_res, Message.changeset(%Message{}, llm))
+    |> Repo.transaction()
   end
 
   @doc """

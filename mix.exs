@@ -59,7 +59,8 @@ defmodule ChatApp.MixProject do
       {:dns_cluster, "~> 0.1.1"},
       {:bandit, "~> 1.2"},
       {:httpoison, "~> 2.2"},
-      {:earmark, "~> 1.4"}
+      {:earmark, "~> 1.4"},
+      {:uuid, "~> 1.1"}
     ]
   end
 

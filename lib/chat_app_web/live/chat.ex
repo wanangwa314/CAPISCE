@@ -1,4 +1,7 @@
 defmodule ChatAppWeb.ChatLive do
+  alias ChatApp.Chats
+  alias ChatApp.Utils.Helpers
+
   use ChatAppWeb, :live_view
   require Logger
 
@@ -7,7 +10,11 @@ defmodule ChatAppWeb.ChatLive do
 
     {:ok,
      socket
-     |> assign(chat_data: data)}
+     |> assign(
+       chat_data: data,
+       new_chat: true,
+       chat_history: Chats.list_chats()
+     )}
   end
 
   def handle_event(event, params, socket) do
@@ -30,11 +37,21 @@ defmodule ChatAppWeb.ChatLive do
     user_message = socket.assigns.user_message
     send(self(), :prompt)
 
-    {:noreply,
-     socket
-     |> update(:chat_data, fn data ->
-       data ++ [%{type: "USER", msg: user_message}]
-     end)}
+    if socket.assigns.new_chat do
+      {:noreply,
+       socket
+       |> update(:chat_data, fn data ->
+         data ++ [%{type: "USER", msg: user_message}]
+       end)
+       |> assign(new_chat: false)
+       |> push_patch(to: "/chat/#{UUID.uuid4()}")}
+    else
+      {:noreply,
+       socket
+       |> update(:chat_data, fn data ->
+         data ++ [%{type: "USER", msg: user_message}]
+       end)}
+    end
   end
 
   def handle_info(:prompt, socket) do
@@ -49,20 +66,22 @@ defmodule ChatAppWeb.ChatLive do
   end
 
   defp prompt_llm(message, socket) do
+    chat_id = socket.assigns.chat_data2.id
     # :timer.sleep(2000)
     system_prompt = system_prompt()
     context = prompt_context(socket)
-    message = """
-                  ===================== USER PROMPT ========================\n
-                  #{message}
-              """
+
+    message_prepared = """
+        ===================== USER PROMPT ========================\n
+        #{message}
+    """
 
     body = %{
       "contents" => [
         %{
           "parts" => [
             %{
-              "text" => "#{system_prompt} \n #{context} \n #{message}"
+              "text" => "#{system_prompt} \n #{context} \n #{message_prepared}"
             }
           ]
         }
@@ -76,28 +95,12 @@ defmodule ChatAppWeb.ChatLive do
         [{"Content-Type", "application/json"}],
         recv_timeout: 300_000
       )
-
-    case res do
-      {:ok, data} ->
-        Jason.decode!(data.body)
-        |> get_in(["candidates", Access.all(), "content", "parts", Access.at(0), "text"])
-        |> List.first()
-        |> case do
-          nil -> "I have no more responses sorry."
-          text -> text
-        end
-        |> String.replace("<p>", "")
-        |> String.replace("</p>", "")
-        |> Earmark.as_html()
-        |> case do
-          {:ok, md, _list} -> md
-          {:error, error, _list} -> Logger.error(error)
-        end
-
-      {:error, error} ->
-        Phoenix.Naming.humanize(error.reason)
-    end
+    extract = Helpers.extract_llm_response(res)
+    Chats.log_message_transaction(extract, message, chat_id)
+    extract
   end
+
+
 
   defp system_prompt() do
     """
@@ -122,14 +125,34 @@ defmodule ChatAppWeb.ChatLive do
     data = socket.assigns.chat_data
 
     context = """
-                ======================== CONTEXT =======================
+      ======================== CONTEXT =======================
 
-              """
+    """
 
-    context2 = Enum.map(data, fn msg ->
-      "#{msg.type}: #{msg.msg}"
-    end)
+    context2 =
+      Enum.map(data, fn msg ->
+        "#{msg.type}: #{msg.msg}"
+      end)
 
     context <> Enum.join(context2, "\n")
+  end
+
+  def handle_params(params, _uri, socket) do
+    case params["id"] do
+      nil ->
+        {:noreply, socket}
+      _ ->
+        case Chats.get_chat_by_ref_id(params["id"]) do
+          nil ->
+            Chats.create_chat(%{name: "Chat ID: #{params["id"]}", ref_id: params["id"]})
+            |> case do
+              {:ok, chat} ->
+                {:noreply, socket |> assign(new_chat: false, chat_data2: chat)}
+            end
+
+          chat ->
+            {:noreply, socket |> assign(new_chat: false, chat_data2: chat)}
+        end
+    end
   end
 end
